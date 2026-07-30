@@ -8,22 +8,30 @@ import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import 'bootstrap/dist/css/bootstrap.min.css';
+// Remove the useNavigate import since we're using a different approach
+// import { useNavigate } from "react-router-dom";
 
-const EmployeeCRUD = () => {
+// Add a prop to receive the navigation function
+const EmployeeCRUD = ({ onNavigateToTransactions }) => {
   const [data, setData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('add');
   const [editId, setEditId] = useState(null);
+  // Remove this line: const navigate = useNavigate();
   const [formData, setFormData] = useState({ 
     incomeAmount: "", 
     inDate: "", 
     creditAccount: "", 
-    debitAccount: ""
+    debitAccount: "",
+    accountents: ""
   });
   const [formErrors, setFormErrors] = useState({});
   const [loading, setLoading] = useState(false);
+//Localhost API URL
+  //const API_BASE_URL = 'https://localhost:44357/api/Accout';
 
-  const API_BASE_URL = 'https://localhost:44357/api/Accout';
+  //Live API URL
+   const API_BASE_URL = 'http://homemanageapp.runasp.net/api/Accout';
 
   useEffect(() => {
     getdata();
@@ -43,8 +51,9 @@ const EmployeeCRUD = () => {
         setLoading(false);
       })
       .catch((error) => {
-        console.log('Error fetching data:', error);
+        console.error('Error fetching data:', error);
         setLoading(false);
+        alert('Failed to fetch data. Please try again.');
       });
   };
 
@@ -53,19 +62,24 @@ const EmployeeCRUD = () => {
     if (type === 'edit' && id) {
       setEditId(id);
       const itemToEdit = data.find((item) => item.id === id);
-      setFormData({
-        incomeAmount: itemToEdit?.incomeAmount || "",
-        inDate: itemToEdit?.inDate || "", // DateOnly comes as string "YYYY-MM-DD"
-        creditAccount: itemToEdit?.creditAccount || "",
-        debitAccount: itemToEdit?.debitAccount || ""
-      });
+      if (itemToEdit) {
+        setFormData({
+          incomeAmount: itemToEdit.incomeAmount?.toString() || "",
+          inDate: itemToEdit.inDate || "", 
+          creditAccount: itemToEdit.creditAccount || "",
+          debitAccount: itemToEdit.debitAccount || "",
+          accountents: itemToEdit.accountents || ""
+        });
+      }
     } else {
       setFormData({ 
         incomeAmount: "", 
         inDate: "", 
         creditAccount: "", 
-        debitAccount: ""
+        debitAccount: "",
+        accountents: ""
       });
+      setEditId(null);
     }
     setShowModal(true);
     setFormErrors({});
@@ -74,6 +88,7 @@ const EmployeeCRUD = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setFormErrors({});
+    setEditId(null);
   };
 
   const handleInputChange = (e) => {
@@ -96,8 +111,8 @@ const EmployeeCRUD = () => {
     
     if (!formData.incomeAmount.trim()) {
       errors.incomeAmount = 'Income Amount is required';
-    } else if (isNaN(parseFloat(formData.incomeAmount))) {
-      errors.incomeAmount = 'Income Amount must be a valid number';
+    } else if (isNaN(parseFloat(formData.incomeAmount)) || parseFloat(formData.incomeAmount) <= 0) {
+      errors.incomeAmount = 'Income Amount must be a valid positive number';
     }
     
     if (!formData.inDate) {
@@ -111,6 +126,10 @@ const EmployeeCRUD = () => {
     if (!formData.debitAccount?.trim()) {
       errors.debitAccount = 'Debit Account is required';
     }
+
+    if (!formData.accountents?.trim()) {
+      errors.accountents = 'Accountents is required';
+    }
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -123,35 +142,33 @@ const EmployeeCRUD = () => {
       return;
     }
 
-    // Prepare data for API - match your C# model exactly
     const apiData = {
       incomeAmount: formData.incomeAmount,
-      inDate: formData.inDate, // DateOnly expects "YYYY-MM-DD" format
-      creditAccount: formData.creditAccount,
-      debitAccount: formData.debitAccount
+      inDate: formData.inDate,
+      creditAccount: formData.creditAccount.trim(),
+      debitAccount: formData.debitAccount.trim(),
+      accountents: formData.accountents.trim()
     };
-
-    // For edit, include the ID
-    if (modalType === 'edit') {
-      apiData.id = editId;
-    }
 
     const requestOptions = {
       method: modalType === 'add' ? 'POST' : 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(apiData)
+      body: JSON.stringify(modalType === 'add' ? apiData : { ...apiData, id: editId })
     };
 
     const url = modalType === 'add' 
       ? API_BASE_URL 
       : `${API_BASE_URL}/${editId}`;
 
+    setLoading(true);
     fetch(url, requestOptions)
       .then((response) => {
         if (!response.ok) {
-          return response.text().then(text => { throw new Error(text) });
+          return response.text().then(text => { 
+            throw new Error(text || 'Request failed'); 
+          });
         }
         return response.json();
       })
@@ -160,45 +177,80 @@ const EmployeeCRUD = () => {
         handleCloseModal();
       })
       .catch((error) => {
-        console.log('Error submitting data:', error);
-        alert('Error: ' + error.message);
+        console.error('Error submitting data:', error);
+        try {
+          const errorObj = JSON.parse(error.message);
+          if (errorObj.errors) {
+            const errorMessages = Object.values(errorObj.errors).flat().join('\n');
+            alert('Validation Error:\n' + errorMessages);
+          } else {
+            alert('Error: ' + error.message);
+          }
+        } catch {
+          alert('Error: ' + error.message);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
       });
   };
 
   const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this record?")) {
-      fetch(`${API_BASE_URL}/${id}`, {
-        method: 'DELETE',
-      })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        getdata();
-      })
-      .catch((error) => {
-        console.log('Error deleting data:', error);
-        alert('Error deleting record');
-      });
+    if (!window.confirm("Are you sure you want to delete this record?")) {
+      return;
     }
+
+    setLoading(true);
+    fetch(`${API_BASE_URL}/${id}`, {
+      method: 'DELETE',
+    })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      getdata();
+    })
+    .catch((error) => {
+      console.error('Error deleting data:', error);
+      alert('Error deleting record');
+    })
+    .finally(() => {
+      setLoading(false);
+    });
   };
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
-      // Handle both DateOnly string format and DateTime format
       const date = new Date(dateString);
-      return date.toLocaleDateString();
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
     } catch (error) {
       return dateString;
     }
   };
 
+  // Handle navigation to transactions page
+  const handleNavigateToTransactions = () => {
+    if (onNavigateToTransactions) {
+      onNavigateToTransactions();
+    } else {
+      // Fallback: Use window.location if prop is not provided
+      window.location.href = '/transactions';
+    }
+  };
+
   return (
     <Container className="py-4">
-       <Row className="mb-4">
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" />
+      
+      <Row className="mb-4">
         <Col>
-          <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <h1 style={{ 
               color: "#2c3e50", 
               fontWeight: "bold",
@@ -208,7 +260,7 @@ const EmployeeCRUD = () => {
               Account Management System
             </h1>
             <Button 
-              onClick={() => window.location.reload()} // Simple refresh to show navigation
+              onClick={handleNavigateToTransactions}
               variant="outline-primary"
               style={{ 
                 borderRadius: "20px",
@@ -227,6 +279,7 @@ const EmployeeCRUD = () => {
         <Col className="text-end">
           <Button 
             onClick={() => handleShowModal('add')}
+            disabled={loading}
             style={{ 
               backgroundColor: "#27ae60", 
               border: "none",
@@ -248,7 +301,7 @@ const EmployeeCRUD = () => {
         overflow: "hidden"
       }}>
         <Card.Body className="p-0">
-          {loading ? (
+          {loading && !data.length ? (
             <div className="text-center py-4">
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
@@ -256,80 +309,85 @@ const EmployeeCRUD = () => {
               <p className="mt-2">Loading data...</p>
             </div>
           ) : (
-            <Table hover responsive className="mb-0">
-              <thead>
-                <tr style={{ backgroundColor: "#7364f5ff", color: "white" }}>
-                  <th className="ps-4">#</th>
-                  <th>ID</th>
-                  <th>Income Amount</th>
-                  <th>Date</th>
-                  <th>Credit Account</th>
-                  <th>Debit Account</th>
-                  <th>Created At</th>
-                  <th>Updated At</th>
-                  <th className="text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data && data.length > 0 ? (
-                  data.map((item, index) => (
-                    <tr key={index} style={{ 
-                      backgroundColor: index % 2 === 0 ? "#f8f9fa" : "white",
-                      transition: "background-color 0.2s"
-                    }}>
-                      <td className="ps-4 fw-bold" style={{ color: "#2c3e50" }}>{index + 1}</td>
-                      <td style={{ color: "#7f8c8d", fontSize: "0.9em" }}>{item.id}</td>
-                      <td>
-                        <span style={{ color: "#2c3e50", fontWeight: "500" }}>
-                          ${item.incomeAmount}
-                        </span>
-                      </td>
-                      <td style={{ color: "#2c3e50" }}>{formatDate(item.inDate)}</td>
-                      <td style={{ color: "#2c3e50" }}>{item.creditAccount || 'N/A'}</td>
-                      <td style={{ color: "#2c3e50" }}>{item.debitAccount || 'N/A'}</td>
-                      <td style={{ color: "#2c3e50" }}>{formatDate(item.createdAt)}</td>
-                      <td style={{ color: "#2c3e50" }}>{formatDate(item.updatedAt)}</td>
-                      <td>
-                        <div className="d-flex justify-content-center">
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleShowModal('edit', item.id)}
-                            style={{ 
-                              borderRadius: "20px",
-                              padding: "0.25em 1em"
-                            }}
-                          >
-                            <i className="bi bi-pencil me-1"></i>
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDelete(item.id)}
-                            style={{ 
-                              borderRadius: "20px",
-                              padding: "0.25em 1em"
-                            }}
-                          >
-                            <i className="bi bi-trash me-1"></i>
-                            Delete
-                          </Button>
-                        </div>
+            <div className="table-responsive">
+              <Table hover className="mb-0">
+                <thead>
+                  <tr style={{ backgroundColor: "#7364f5ff", color: "white" }}>
+                    <th className="ps-4">#</th>
+                    <th>ID</th>
+                    <th>Income Amount</th>
+                    <th>Date</th>
+                    <th>Credit Account</th>
+                    <th>Debit Account</th>
+                    <th>Accountents</th>
+                    <th>Created At</th>
+                    <th>Updated At</th>
+                    <th className="text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data && data.length > 0 ? (
+                    data.map((item, index) => (
+                      <tr key={item.id || index} style={{ 
+                        backgroundColor: index % 2 === 0 ? "#f8f9fa" : "white",
+                        transition: "background-color 0.2s"
+                      }}>
+                        <td className="ps-4 fw-bold" style={{ color: "#2c3e50" }}>{index + 1}</td>
+                        <td style={{ color: "#7f8c8d", fontSize: "0.9em" }}>{item.id}</td>
+                        <td>
+                          <span style={{ color: "#2c3e50", fontWeight: "500" }}>
+                            ${Number(item.incomeAmount).toFixed(2)}
+                          </span>
+                        </td>
+                        <td style={{ color: "#2c3e50" }}>{formatDate(item.inDate)}</td>
+                        <td style={{ color: "#2c3e50" }}>{item.creditAccount || 'N/A'}</td>
+                        <td style={{ color: "#2c3e50" }}>{item.debitAccount || 'N/A'}</td>
+                        <td style={{ color: "#2c3e50" }}>{item.accountents || 'N/A'}</td>
+                        <td style={{ color: "#2c3e50" }}>{formatDate(item.createdAt)}</td>
+                        <td style={{ color: "#2c3e50" }}>{formatDate(item.updatedAt)}</td>
+                        <td>
+                          <div className="d-flex justify-content-center gap-2 flex-wrap">
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() => handleShowModal('edit', item.id)}
+                              disabled={loading}
+                              style={{ 
+                                borderRadius: "20px",
+                                padding: "0.25em 1em"
+                              }}
+                            >
+                              <i className="bi bi-pencil me-1"></i>
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => handleDelete(item.id)}
+                              disabled={loading}
+                              style={{ 
+                                borderRadius: "20px",
+                                padding: "0.25em 1em"
+                              }}
+                            >
+                              <i className="bi bi-trash me-1"></i>
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="10" className="text-center py-4" style={{ color: "#7f8c8d" }}>
+                        <i className="bi bi-inbox" style={{ fontSize: "2rem" }}></i>
+                        <p className="mt-2">No records found</p>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="9" className="text-center py-4" style={{ color: "#7f8c8d" }}>
-                      <i className="bi bi-inbox" style={{ fontSize: "2rem" }}></i>
-                      <p className="mt-2">No records found</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
+                  )}
+                </tbody>
+              </Table>
+            </div>
           )}
         </Card.Body>
       </Card>
@@ -408,21 +466,46 @@ const EmployeeCRUD = () => {
                 {formErrors.debitAccount}
               </Form.Control.Feedback>
             </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Accountents *</Form.Label>
+              <Form.Control
+                type="text"
+                name="accountents"
+                value={formData.accountents}
+                onChange={handleInputChange}
+                isInvalid={!!formErrors.accountents}
+                placeholder="Enter accountents"
+              />
+              <Form.Control.Feedback type="invalid">
+                {formErrors.accountents}
+              </Form.Control.Feedback>
+            </Form.Group>
           </Modal.Body>
           <Modal.Footer>
-            <Button variant="secondary" onClick={handleCloseModal}>
+            <Button variant="secondary" onClick={handleCloseModal} disabled={loading}>
               <i className="bi bi-x-circle me-1"></i>
               Cancel
             </Button>
             <Button 
-              type="submit" 
+              type="submit"
+              disabled={loading}
               style={{ 
                 backgroundColor: "#27ae60", 
                 border: "none" 
               }}
             >
-              <i className={modalType === 'add' ? "bi bi-plus-circle me-1" : "bi bi-check-circle me-1"}></i>
-              {modalType === 'add' ? 'Add Record' : 'Save Changes'}
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <i className={modalType === 'add' ? "bi bi-plus-circle me-1" : "bi bi-check-circle me-1"}></i>
+                  {modalType === 'add' ? 'Add Record' : 'Save Changes'}
+                </>
+              )}
             </Button>
           </Modal.Footer>
         </Form>
@@ -431,9 +514,6 @@ const EmployeeCRUD = () => {
       <div className="mt-4 text-center" style={{ color: "#7f8c8d" }}>
         <p>Showing {data.length} records</p>
       </div>
-
-      {/* Add Bootstrap Icons */}
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" />
     </Container>
   );
 };

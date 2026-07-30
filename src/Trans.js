@@ -51,7 +51,12 @@ const MonthlyIncomeExpenseManager = () => {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [viewMode, setViewMode] = useState('current'); // 'current', 'select', 'all'
 
-  const API_BASE_URL = 'https://localhost:44357/api/Transaction';
+  //Locfalhost API URL
+  //const API_BASE_URL = 'https://localhost:44357/api/Transaction';
+
+  //Live API URL
+   const API_BASE_URL = 'http://homemanageapp.runasp.net/api/Transaction';
+
   const categories = ["food", "transport", "utilities", "entertainment", "shopping", "healthcare", "education", "other"];
 
   // Helper function to get current month in YYYY-MM format
@@ -205,7 +210,7 @@ const MonthlyIncomeExpenseManager = () => {
     setReportSummary(summary);
     setShowReportModal(false);
   };
-
+//
   const resetReportFilters = () => {
     setReportFilters({
       startDate: "",

@@ -49,15 +49,25 @@ function App() {
     setUser(null);
   };
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'transactions':
-        return <TransactionCRUD/>;
-      case 'employees':
-      default:
-        return <EmployeeCRUD/>;
-    }
-  };
+  // const renderPage = () => {
+  //   switch (currentPage) {
+  //     case 'transactions':
+  //       return <TransactionCRUD/>;
+  //     case 'employees':
+  //     default:
+  //       return <EmployeeCRUD/>;
+  //   }
+  // };
+  // In App.js, update the renderPage function:
+const renderPage = () => {
+  switch (currentPage) {
+    case 'transactions':
+      return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />;
+    case 'employees':
+    default:
+      return <EmployeeCRUD onNavigateToTransactions={() => setCurrentPage('transactions')} />;
+  }
+};
 
   const menuItems = [
     {
