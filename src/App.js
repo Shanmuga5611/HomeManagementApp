@@ -14,7 +14,7 @@ function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [hoveredItem, setHoveredItem] = useState(null);
+  const [, setHoveredItem] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
 
   useEffect(() => {
