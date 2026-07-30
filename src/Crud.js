@@ -31,7 +31,7 @@ const EmployeeCRUD = ({ onNavigateToTransactions }) => {
   //const API_BASE_URL = 'https://localhost:44357/api/Accout';
 
   //Live API URL
-   const API_BASE_URL = 'http://homemanageapp.runasp.net/api/Accout';
+   const API_BASE_URL = 'https://homemanageapp.runasp.net/api/Accout';
 
   useEffect(() => {
     getdata();
