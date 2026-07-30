@@ -38,9 +38,14 @@ const Register = ({ onLogin }) => {
       setLoading(false);
       return;
     }
+//Localhost API URL
+  //const API_BASE_URL = 'https://localhost:44357/api;
 
+  //Live API URL
+   const API_BASE_URL = 'http://homemanageapp.runasp.net/api';
     try {
-      const response = await fetch('https://localhost:44357/api/LoginRegister/register', {
+
+      const response = await fetch(`${API_BASE_URL}/LoginRegister/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
