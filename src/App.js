@@ -11,14 +11,12 @@ import './App.css';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('employees');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [, setHoveredItem] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
 
   useEffect(() => {
-    // Check if user is logged in on app start
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
@@ -27,15 +25,18 @@ function App() {
     }
     setLoading(false);
 
-    // Handle window resize
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 992);
-      if (window.innerWidth < 992) {
-        setIsSidebarCollapsed(true);
+      const mobile = window.innerWidth < 992;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
       }
     };
 
     window.addEventListener('resize', handleResize);
+    handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
@@ -49,41 +50,37 @@ function App() {
     setUser(null);
   };
 
-  // const renderPage = () => {
-  //   switch (currentPage) {
-  //     case 'transactions':
-  //       return <TransactionCRUD/>;
-  //     case 'employees':
-  //     default:
-  //       return <EmployeeCRUD/>;
-  //   }
-  // };
-  // In App.js, update the renderPage function:
-const renderPage = () => {
-  switch (currentPage) {
-    case 'transactions':
-      return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />;
-    case 'employees':
-    default:
-      return <EmployeeCRUD onNavigateToTransactions={() => setCurrentPage('transactions')} />;
-  }
-};
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'transactions':
+        return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />;
+      case 'employees':
+      default:
+        return <EmployeeCRUD onNavigateToTransactions={() => setCurrentPage('transactions')} />;
+    }
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const closeSidebar = () => {
+    if (isMobile) {
+      setIsSidebarOpen(false);
+    }
+  };
 
   const menuItems = [
     {
       key: 'employees',
       label: 'Account Management',
       icon: 'bi-people',
-      color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      hoverColor: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
       description: 'Manage user accounts'
     },
     {
       key: 'transactions',
       label: 'Transaction Management',
       icon: 'bi-cash-stack',
-      color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-      hoverColor: 'linear-gradient(135deg, #f5576c 0%, #f093fb 100%)',
       description: 'Track all transactions'
     }
   ];
@@ -116,18 +113,34 @@ const renderPage = () => {
   return (
     <Router>
       <div className="App">
-        {/* Enhanced Navigation Bar */}
+        {/* Mobile Overlay */}
+        {isMobile && isSidebarOpen && (
+          <div className="sidebar-overlay" onClick={closeSidebar}></div>
+        )}
+
+        {/* Navigation Bar */}
         <Navbar expand="lg" className="custom-navbar" sticky="top">
           <Container fluid>
-            <Navbar.Brand href="#" className="brand-logo">
-              <div className="logo-wrapper">
-                <div className="logo-icon pulse-icon">
-                  <i className="bi bi-house-heart"></i>
+            <div className="navbar-left">
+              <Button 
+                variant="link" 
+                className="menu-toggle-btn"
+                onClick={toggleSidebar}
+                aria-label="Toggle menu"
+              >
+                <i className={`bi ${isSidebarOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
+              </Button>
+              <Navbar.Brand href="#" className="brand-logo">
+                <div className="logo-wrapper">
+                  <div className="logo-icon">
+                    <i className="bi bi-house-heart"></i>
+                  </div>
+                  <span className="brand-text">Home Management</span>
                 </div>
-                <span className="brand-text">Home Management System</span>
-              </div>
-            </Navbar.Brand>
-            <div className="d-flex align-items-center gap-3">
+              </Navbar.Brand>
+            </div>
+
+            <div className="navbar-right">
               <div className="user-badge">
                 <div className="user-badge-avatar">
                   <i className="bi bi-person-circle"></i>
@@ -143,78 +156,53 @@ const renderPage = () => {
                 className="logout-btn"
                 onClick={handleLogout}
               >
-                <i className="bi bi-box-arrow-right me-1"></i>
-                Logout
+                <i className="bi bi-box-arrow-right"></i>
+                <span className="d-none d-sm-inline"> Logout</span>
               </Button>
-              <Navbar.Toggle 
-                aria-controls="basic-navbar-nav" 
-                className="custom-toggler"
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              >
-                <div className="hamburger-wrapper">
-                  <span className={`hamburger-line ${!isSidebarCollapsed ? 'active' : ''}`}></span>
-                  <span className={`hamburger-line ${!isSidebarCollapsed ? 'active' : ''}`}></span>
-                  <span className={`hamburger-line ${!isSidebarCollapsed ? 'active' : ''}`}></span>
-                </div>
-              </Navbar.Toggle>
             </div>
           </Container>
         </Navbar>
 
-        {/* Main Container with Sidebar and Content */}
+        {/* Main Container */}
         <Container fluid className="main-container">
           <Row className="h-100 g-0">
-            {/* Enhanced Sidebar */}
+            {/* Sidebar */}
             <Col 
-              xs={isSidebarCollapsed ? 'auto' : 3} 
-              lg={isSidebarCollapsed ? 'auto' : 2} 
-              className={`sidebar-col ${isSidebarCollapsed ? 'collapsed' : ''}`}
+              xs={12}
+              md={3}
+              lg={2}
+              className={`sidebar-col ${isSidebarOpen ? 'open' : 'closed'}`}
             >
               <div className="sidebar-wrapper">
                 <div className="sidebar-header">
-                  {!isSidebarCollapsed && (
-                    <div className="sidebar-title animate-slide-in">
-                      <div className="title-icon-wrapper">
-                        <i className="bi bi-grid-3x3-gap-fill"></i>
-                      </div>
-                      <span>Navigation</span>
+                  <div className="sidebar-title">
+                    <div className="title-icon-wrapper">
+                      <i className="bi bi-grid-3x3-gap-fill"></i>
                     </div>
-                  )}
+                    <span>Navigation</span>
+                  </div>
                 </div>
                 
                 <Nav className="flex-column sidebar-nav">
-                  {menuItems.map((item, index) => (
+                  {menuItems.map((item) => (
                     <Nav.Link
                       key={item.key}
-                      className={`sidebar-nav-link ${currentPage === item.key ? 'active' : ''} animate-slide-in`}
-                      style={{ animationDelay: `${index * 100}ms` }}
+                      className={`sidebar-nav-link ${currentPage === item.key ? 'active' : ''}`}
                       onClick={() => {
                         setCurrentPage(item.key);
-                        if (isMobile) {
-                          setIsSidebarCollapsed(true);
-                        }
+                        closeSidebar();
                       }}
-                      onMouseEnter={() => setHoveredItem(item.key)}
-                      onMouseLeave={() => setHoveredItem(null)}
                     >
                       <div className="nav-link-content">
                         <div className="nav-icon-wrapper">
                           <i className={`bi ${item.icon} nav-icon`}></i>
-                          {currentPage === item.key && (
-                            <span className="nav-pulse"></span>
-                          )}
                         </div>
-                        {!isSidebarCollapsed && (
-                          <div className="nav-text-wrapper">
-                            <span className="nav-label">{item.label}</span>
-                            <span className="nav-description">{item.description}</span>
-                          </div>
-                        )}
+                        <div className="nav-text-wrapper">
+                          <span className="nav-label">{item.label}</span>
+                          <span className="nav-description">{item.description}</span>
+                        </div>
                       </div>
-                      {!isSidebarCollapsed && (
-                        <div className="nav-tooltip-indicator"></div>
-                      )}
-                      {currentPage === item.key && !isSidebarCollapsed && (
+                      {currentPage === item.key && (
                         <div className="active-indicator">
                           <div className="indicator-dot"></div>
                         </div>
@@ -223,39 +211,37 @@ const renderPage = () => {
                   ))}
                 </Nav>
 
-                {/* Enhanced Sidebar Footer */}
-                {!isSidebarCollapsed && (
-                  <div className="sidebar-footer animate-slide-up">
-                    <div className="user-profile-card">
-                      <div className="user-profile-avatar">
-                        <img 
-                          src={`https://ui-avatars.com/api/?name=${user.username}&background=667eea&color=fff&bold=true`}
-                          alt={user.username}
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '<i class="bi bi-person-circle"></i>';
-                          }}
-                        />
-                      </div>
-                      <div className="user-profile-info">
-                        <div className="user-profile-name">{user.username}</div>
-                        <div className="user-profile-role">Administrator</div>
-                      </div>
+                <div className="sidebar-footer">
+                  <div className="user-profile-card">
+                    <div className="user-profile-avatar">
+                      <img 
+                        src={`https://ui-avatars.com/api/?name=${user.username}&background=667eea&color=fff&bold=true`}
+                        alt={user.username}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<i class="bi bi-person-circle"></i>';
+                        }}
+                      />
+                    </div>
+                    <div className="user-profile-info">
+                      <div className="user-profile-name">{user.username}</div>
+                      <div className="user-profile-role">Administrator</div>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             </Col>
 
-            {/* Enhanced Content Area */}
+            {/* Content Area */}
             <Col 
-              xs={isSidebarCollapsed ? 12 : 9} 
-              lg={isSidebarCollapsed ? 11 : 10} 
+              xs={12}
+              md={9}
+              lg={10}
               className="content-col"
             >
               <div className="content-wrapper">
-                {/* Enhanced Page Header */}
-                <div className="page-header animate-fade-in">
+                {/* Page Header */}
+                <div className="page-header">
                   <div className="page-header-left">
                     <div className="page-icon-wrapper">
                       <i className={`bi ${
@@ -273,21 +259,10 @@ const renderPage = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="page-header-right">
-                    <button 
-                      className="btn toggle-sidebar-btn"
-                      onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                    >
-                      <i className={`bi ${isSidebarCollapsed ? 'bi-arrows-expand' : 'bi-arrows-collapse'}`}></i>
-                      <span className="d-none d-md-inline">
-                        {isSidebarCollapsed ? 'Expand' : 'Collapse'} Menu
-                      </span>
-                    </button>
-                  </div>
                 </div>
 
-                {/* Enhanced Page Content */}
-                <div className="page-content animate-fade-in">
+                {/* Page Content */}
+                <div className="page-content">
                   <div className="content-card">
                     {renderPage()}
                   </div>
@@ -297,7 +272,6 @@ const renderPage = () => {
           </Row>
         </Container>
 
-        {/* Bootstrap Icons */}
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" />
       </div>
     </Router>
