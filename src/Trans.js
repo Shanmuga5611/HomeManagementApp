@@ -51,7 +51,7 @@ const MonthlyIncomeExpenseManager = () => {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [viewMode, setViewMode] = useState('current');
   const [expandedRows, setExpandedRows] = useState({});
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [, setIsMobile] = useState(window.innerWidth < 768);
 
   const API_BASE_URL = 'https://homemanageapp.runasp.net/api/Transaction';
   const categories = ["food", "transport", "utilities", "entertainment", "shopping", "healthcare", "education", "other"];
