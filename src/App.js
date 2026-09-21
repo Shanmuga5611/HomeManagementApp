@@ -5,6 +5,7 @@ import EmployeeCRUD from './Crud';
 import TransactionCRUD from './Trans';
 import Login from './components/Login';
 import Register from './components/Register';
+import UserManagement from './components/UserManagement'; // NEW: admin-only screen
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Container, Navbar, Nav, Row, Col, Button } from 'react-bootstrap';
 import './App.css';
@@ -16,10 +17,12 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
 
+  const isAdmin = user?.role === 'Admin'; // NEW
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
-    
+
     if (token && userData) {
       setUser(JSON.parse(userData));
     }
@@ -28,11 +31,7 @@ function App() {
     const handleResize = () => {
       const mobile = window.innerWidth < 992;
       setIsMobile(mobile);
-      if (!mobile) {
-        setIsSidebarOpen(true);
-      } else {
-        setIsSidebarOpen(false);
-      }
+      setIsSidebarOpen(!mobile);
     };
 
     window.addEventListener('resize', handleResize);
@@ -54,36 +53,50 @@ function App() {
     switch (currentPage) {
       case 'transactions':
         return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />;
+      case 'users':
+        // Extra guard — even if someone forces this state, non-admins can't see it
+        return isAdmin ? <UserManagement /> : <Navigate to="/" replace />;
       case 'employees':
       default:
         return <EmployeeCRUD onNavigateToTransactions={() => setCurrentPage('transactions')} />;
     }
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const closeSidebar = () => { if (isMobile) setIsSidebarOpen(false); };
 
-  const closeSidebar = () => {
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
-  };
-
+  // NEW: "User Management" only shows up for Admins
   const menuItems = [
     {
       key: 'employees',
       label: 'Account Management',
       icon: 'bi-people',
-      description: 'Manage user accounts'
+      description: 'Manage and organize accounts'
     },
     {
       key: 'transactions',
       label: 'Transaction Management',
       icon: 'bi-cash-stack',
-      description: 'Track all transactions'
-    }
+      description: 'Track your own transactions'
+    },
+    ...(isAdmin ? [{
+      key: 'users',
+      label: 'User Management',
+      icon: 'bi-person-badge',
+      description: 'Manage all usernames & passwords'
+    }] : [])
   ];
+
+  const pageTitles = {
+    employees: 'Account Management',
+    transactions: 'Transaction Management',
+    users: 'User Management'
+  };
+  const pageSubtitles = {
+    employees: 'Manage and organize all user accounts',
+    transactions: 'Track and manage your financial transactions',
+    users: 'Admin only: manage every user\'s username, password & role'
+  };
 
   if (loading) {
     return (
@@ -113,28 +126,19 @@ function App() {
   return (
     <Router>
       <div className="App">
-        {/* Mobile Overlay */}
         {isMobile && isSidebarOpen && (
           <div className="sidebar-overlay" onClick={closeSidebar}></div>
         )}
 
-        {/* Navigation Bar */}
         <Navbar expand="lg" className="custom-navbar" sticky="top">
           <Container fluid>
             <div className="navbar-left">
-              <Button 
-                variant="link" 
-                className="menu-toggle-btn"
-                onClick={toggleSidebar}
-                aria-label="Toggle menu"
-              >
+              <Button variant="link" className="menu-toggle-btn" onClick={toggleSidebar} aria-label="Toggle menu">
                 <i className={`bi ${isSidebarOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
               </Button>
               <Navbar.Brand href="#" className="brand-logo">
                 <div className="logo-wrapper">
-                  <div className="logo-icon">
-                    <i className="bi bi-house-heart"></i>
-                  </div>
+                  <div className="logo-icon"><i className="bi bi-house-heart"></i></div>
                   <span className="brand-text">Home Management</span>
                 </div>
               </Navbar.Brand>
@@ -142,20 +146,13 @@ function App() {
 
             <div className="navbar-right">
               <div className="user-badge">
-                <div className="user-badge-avatar">
-                  <i className="bi bi-person-circle"></i>
-                </div>
+                <div className="user-badge-avatar"><i className="bi bi-person-circle"></i></div>
                 <div className="user-badge-info d-none d-md-block">
                   <span className="user-badge-name">{user.username}</span>
                   <span className="user-badge-email">{user.email}</span>
                 </div>
               </div>
-              <Button 
-                variant="outline-light" 
-                size="sm"
-                className="logout-btn"
-                onClick={handleLogout}
-              >
+              <Button variant="outline-light" size="sm" className="logout-btn" onClick={handleLogout}>
                 <i className="bi bi-box-arrow-right"></i>
                 <span className="d-none d-sm-inline"> Logout</span>
               </Button>
@@ -163,49 +160,33 @@ function App() {
           </Container>
         </Navbar>
 
-        {/* Main Container */}
         <Container fluid className="main-container">
           <Row className="h-100 g-0">
-            {/* Sidebar */}
-            <Col 
-              xs={12}
-              md={3}
-              lg={2}
-              className={`sidebar-col ${isSidebarOpen ? 'open' : 'closed'}`}
-            >
+            <Col xs={12} md={3} lg={2} className={`sidebar-col ${isSidebarOpen ? 'open' : 'closed'}`}>
               <div className="sidebar-wrapper">
                 <div className="sidebar-header">
                   <div className="sidebar-title">
-                    <div className="title-icon-wrapper">
-                      <i className="bi bi-grid-3x3-gap-fill"></i>
-                    </div>
+                    <div className="title-icon-wrapper"><i className="bi bi-grid-3x3-gap-fill"></i></div>
                     <span>Navigation</span>
                   </div>
                 </div>
-                
+
                 <Nav className="flex-column sidebar-nav">
                   {menuItems.map((item) => (
                     <Nav.Link
                       key={item.key}
                       className={`sidebar-nav-link ${currentPage === item.key ? 'active' : ''}`}
-                      onClick={() => {
-                        setCurrentPage(item.key);
-                        closeSidebar();
-                      }}
+                      onClick={() => { setCurrentPage(item.key); closeSidebar(); }}
                     >
                       <div className="nav-link-content">
-                        <div className="nav-icon-wrapper">
-                          <i className={`bi ${item.icon} nav-icon`}></i>
-                        </div>
+                        <div className="nav-icon-wrapper"><i className={`bi ${item.icon} nav-icon`}></i></div>
                         <div className="nav-text-wrapper">
                           <span className="nav-label">{item.label}</span>
                           <span className="nav-description">{item.description}</span>
                         </div>
                       </div>
                       {currentPage === item.key && (
-                        <div className="active-indicator">
-                          <div className="indicator-dot"></div>
-                        </div>
+                        <div className="active-indicator"><div className="indicator-dot"></div></div>
                       )}
                     </Nav.Link>
                   ))}
@@ -214,7 +195,7 @@ function App() {
                 <div className="sidebar-footer">
                   <div className="user-profile-card">
                     <div className="user-profile-avatar">
-                      <img 
+                      <img
                         src={`https://ui-avatars.com/api/?name=${user.username}&background=667eea&color=fff&bold=true`}
                         alt={user.username}
                         onError={(e) => {
@@ -225,43 +206,27 @@ function App() {
                     </div>
                     <div className="user-profile-info">
                       <div className="user-profile-name">{user.username}</div>
-                      <div className="user-profile-role">Administrator</div>
+                      <div className="user-profile-role">{isAdmin ? 'Administrator' : 'User'}</div>
                     </div>
                   </div>
                 </div>
               </div>
             </Col>
 
-            {/* Content Area */}
-            <Col 
-              xs={12}
-              md={9}
-              lg={10}
-              className="content-col"
-            >
+            <Col xs={12} md={9} lg={10} className="content-col">
               <div className="content-wrapper">
-                {/* Page Header */}
                 <div className="page-header">
                   <div className="page-header-left">
                     <div className="page-icon-wrapper">
-                      <i className={`bi ${
-                        currentPage === 'employees' ? 'bi-people' : 'bi-cash-stack'
-                      }`}></i>
+                      <i className={`bi ${currentPage === 'employees' ? 'bi-people' : currentPage === 'users' ? 'bi-person-badge' : 'bi-cash-stack'}`}></i>
                     </div>
                     <div>
-                      <h2 className="page-title">
-                        {currentPage === 'employees' ? 'Account Management' : 'Transaction Management'}
-                      </h2>
-                      <p className="page-subtitle">
-                        {currentPage === 'employees' 
-                          ? 'Manage and organize all user accounts' 
-                          : 'Track and manage all financial transactions'}
-                      </p>
+                      <h2 className="page-title">{pageTitles[currentPage]}</h2>
+                      <p className="page-subtitle">{pageSubtitles[currentPage]}</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Page Content */}
                 <div className="page-content">
                   <div className="content-card">
                     {renderPage()}

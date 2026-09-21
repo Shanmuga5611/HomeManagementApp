@@ -12,6 +12,7 @@ import Dropdown from "react-bootstrap/Dropdown";
 import DropdownButton from "react-bootstrap/DropdownButton";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './MonthlyIncomeExpenseManager.css';
+import { apiFetch } from './api'; // NEW: sends the JWT token on every request
 
 const MonthlyIncomeExpenseManager = () => {
   const [data, setData] = useState([]);
@@ -21,8 +22,8 @@ const MonthlyIncomeExpenseManager = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [modalType, setModalType] = useState('add');
   const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState({ 
-    transactionDate: "", 
+  const [formData, setFormData] = useState({
+    transactionDate: "",
     description: "",
     debitAmount: "",
     category: "food",
@@ -54,6 +55,7 @@ const MonthlyIncomeExpenseManager = () => {
   const [, setIsMobile] = useState(window.innerWidth < 768);
 
   const API_BASE_URL = 'https://homemanageapp.runasp.net/api/Transaction';
+ // const API_BASE_URL = 'https://localhost:7215/api/Transaction';
   const categories = ["food", "transport", "utilities", "entertainment", "shopping", "healthcare", "education", "other"];
 
   // Helper functions
@@ -123,7 +125,7 @@ const MonthlyIncomeExpenseManager = () => {
 
   const getdata = () => {
     setLoading(true);
-    fetch(API_BASE_URL)
+    apiFetch(API_BASE_URL)
       .then((response) => {
         if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
@@ -143,14 +145,14 @@ const MonthlyIncomeExpenseManager = () => {
     const today = new Date();
     const year = today.getFullYear();
     const month = today.getMonth() + 1;
-    fetch(`${API_BASE_URL}/monthly-summary/${year}/${month}`)
+    apiFetch(`${API_BASE_URL}/monthly-summary/${year}/${month}`)
       .then((response) => response.json())
       .then((summary) => setMonthlySummary(summary))
       .catch((error) => console.log('Error fetching monthly summary:', error));
   };
 
   const getCurrentBalance = () => {
-    fetch(`${API_BASE_URL}/current-balance`)
+    apiFetch(`${API_BASE_URL}/current-balance`)
       .then((response) => response.json())
       .then((balance) => setCurrentBalance(balance))
       .catch((error) => console.log('Error fetching current balance:', error));
@@ -170,7 +172,7 @@ const MonthlyIncomeExpenseManager = () => {
         isMonthlyIncome: itemToEdit?.isMonthlyIncome || false
       });
     } else {
-      setFormData({ 
+      setFormData({
         transactionDate: new Date().toISOString().split('T')[0],
         description: "",
         debitAmount: 0,
@@ -200,13 +202,12 @@ const MonthlyIncomeExpenseManager = () => {
 
     const requestOptions = {
       method: modalType === 'add' ? 'POST' : 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(apiData)
     };
 
     const url = modalType === 'add' ? API_BASE_URL : `${API_BASE_URL}/${editId}`;
 
-    fetch(url, requestOptions)
+    apiFetch(url, requestOptions)
       .then((response) => {
         if (!response.ok) return response.text().then(text => { throw new Error(text) });
         return response.json();
@@ -225,7 +226,7 @@ const MonthlyIncomeExpenseManager = () => {
 
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this transaction?")) {
-      fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' })
+      apiFetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' })
         .then((response) => {
           if (!response.ok) throw new Error('Network response was not ok');
           getdata();
@@ -253,9 +254,8 @@ const MonthlyIncomeExpenseManager = () => {
       isMonthlyIncome: true
     };
 
-    fetch(API_BASE_URL, {
+    apiFetch(API_BASE_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(apiData)
     })
       .then((response) => {
@@ -306,7 +306,7 @@ const MonthlyIncomeExpenseManager = () => {
     if (reportFilters.month && reportFilters.year) {
       filtered = filtered.filter(item => {
         const itemDate = new Date(item.transactionDate);
-        return itemDate.getMonth() + 1 === parseInt(reportFilters.month) && 
+        return itemDate.getMonth() + 1 === parseInt(reportFilters.month) &&
                itemDate.getFullYear() === parseInt(reportFilters.year);
       });
     }
@@ -334,7 +334,7 @@ const MonthlyIncomeExpenseManager = () => {
       totalIncome: incomeTransactions.reduce((sum, item) => sum + (item.incomeAmount || 0), 0),
       totalExpenses: expenseTransactions.reduce((sum, item) => sum + (item.debitAmount || 0), 0),
       totalTransactions: filtered.length,
-      netBalance: incomeTransactions.reduce((sum, item) => sum + (item.incomeAmount || 0), 0) - 
+      netBalance: incomeTransactions.reduce((sum, item) => sum + (item.incomeAmount || 0), 0) -
                  expenseTransactions.reduce((sum, item) => sum + (item.debitAmount || 0), 0),
       categoryBreakdown: categories.reduce((acc, category) => {
         acc[category] = expenseTransactions
@@ -369,7 +369,7 @@ const MonthlyIncomeExpenseManager = () => {
     const { name, value, type, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: type === 'checkbox' ? checked : 
+      [name]: type === 'checkbox' ? checked :
               name === 'debitAmount' ? parseFloat(value) || 0 : value
     });
     if (formErrors[name]) {
@@ -470,7 +470,7 @@ const MonthlyIncomeExpenseManager = () => {
     );
   }, [filteredDatas]);
 
-  const sortedData = activeView === 'transactions' 
+  const sortedData = activeView === 'transactions'
     ? [...filteredDatas].sort((a, b) => new Date(a.transactionDate) - new Date(b.transactionDate))
     : [...filteredData].sort((a, b) => new Date(a.transactionDate) - new Date(b.transactionDate));
 
@@ -484,8 +484,8 @@ const MonthlyIncomeExpenseManager = () => {
   const renderMobileCard = (item, index) => {
     const isExpanded = expandedRows[item.id];
     return (
-      <div 
-        key={item.id || index} 
+      <div
+        key={item.id || index}
         className="mobile-transaction-card"
         onClick={() => toggleRowExpansion(item.id)}
       >
@@ -495,7 +495,7 @@ const MonthlyIncomeExpenseManager = () => {
             <span className={`badge ${item.isMonthlyIncome ? 'bg-success' : 'bg-warning'}`}>
               {item.isMonthlyIncome ? 'Income' : 'Expense'}
             </span>
-            <span className="card-category-badge" style={{ 
+            <span className="card-category-badge" style={{
               backgroundColor: getCategoryColor(item.category),
               color: 'white'
             }}>
@@ -503,7 +503,7 @@ const MonthlyIncomeExpenseManager = () => {
             </span>
           </div>
           <div className="card-header-right">
-            <span className="card-amount" style={{ 
+            <span className="card-amount" style={{
               color: item.isMonthlyIncome ? "#27ae60" : "#e74c3c"
             }}>
               {formatCurrency(item.isMonthlyIncome ? item.incomeAmount : item.debitAmount)}
@@ -511,7 +511,7 @@ const MonthlyIncomeExpenseManager = () => {
             <i className={`bi bi-chevron-${isExpanded ? 'up' : 'down'} card-toggle-icon`}></i>
           </div>
         </div>
-        
+
         <div className="card-body-section">
           <div className="card-detail-row">
             <span className="detail-label">Date</span>
@@ -524,7 +524,7 @@ const MonthlyIncomeExpenseManager = () => {
           {activeView === 'transactions' && (
             <div className="card-detail-row">
               <span className="detail-label">Balance</span>
-              <span className="detail-value" style={{ 
+              <span className="detail-value" style={{
                 color: item.cumulativeBalance >= 0 ? "#27ae60" : "#e74c3c",
                 fontWeight: "bold"
               }}>
@@ -533,7 +533,7 @@ const MonthlyIncomeExpenseManager = () => {
             </div>
           )}
         </div>
-        
+
         {isExpanded && activeView === 'transactions' && (
           <div className="card-actions-section">
             <Button
@@ -566,7 +566,7 @@ const MonthlyIncomeExpenseManager = () => {
 
   // Export functions
   const exportToCSV = () => {
-    const exportData = reportFilters.transactionType === 'expense' 
+    const exportData = reportFilters.transactionType === 'expense'
       ? sortedData.filter(item => !item.isMonthlyIncome)
       : sortedData;
 
@@ -581,7 +581,7 @@ const MonthlyIncomeExpenseManager = () => {
 
     const csvContent = [
       headers.join(','),
-      ...csvData.map(row => 
+      ...csvData.map(row =>
         row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
       )
     ].join('\n');
@@ -597,7 +597,7 @@ const MonthlyIncomeExpenseManager = () => {
   };
 
   const exportToPDF = () => {
-    const exportData = reportFilters.transactionType === 'expense' 
+    const exportData = reportFilters.transactionType === 'expense'
       ? sortedData.filter(item => !item.isMonthlyIncome)
       : sortedData;
 
@@ -679,7 +679,7 @@ const MonthlyIncomeExpenseManager = () => {
               </div>
             </div>
             <div className="finance-header-actions">
-              <Button 
+              <Button
                 variant={activeView === 'transactions' ? 'primary' : 'outline-primary'}
                 className="header-action-btn"
                 onClick={() => {
@@ -692,7 +692,7 @@ const MonthlyIncomeExpenseManager = () => {
                 <span className="d-none d-sm-inline">Transactions</span>
                 <span className="d-inline d-sm-none">Txns</span>
               </Button>
-              <Button 
+              <Button
                 variant={activeView === 'report' ? 'primary' : 'outline-primary'}
                 className="header-action-btn"
                 onClick={() => setActiveView('report')}
@@ -718,8 +718,8 @@ const MonthlyIncomeExpenseManager = () => {
                     <span className="d-none d-sm-inline">Current Financial Status</span>
                     <span className="d-inline d-sm-none">Financial Status</span>
                   </h5>
-                  <Button 
-                    variant="success" 
+                  <Button
+                    variant="success"
                     size="sm"
                     onClick={handleShowIncomeModal}
                     className="add-income-btn"
@@ -729,11 +729,11 @@ const MonthlyIncomeExpenseManager = () => {
                     <span className="d-inline d-sm-none">Add Income</span>
                   </Button>
                 </div>
-                
+
                 <div className="balance-grid">
                   <div className="balance-item">
                     <span className="balance-item-label">Balance</span>
-                    <span className="balance-item-value" style={{ 
+                    <span className="balance-item-value" style={{
                       color: currentBalance >= 0 ? '#27ae60' : '#e74c3c'
                     }}>
                       {formatCurrency(currentBalance)}
@@ -755,7 +755,7 @@ const MonthlyIncomeExpenseManager = () => {
                       </div>
                       <div className="balance-item">
                         <span className="balance-item-label">Remaining</span>
-                        <span className="balance-item-value" style={{ 
+                        <span className="balance-item-value" style={{
                           color: (monthlySummary.totalIncome - monthlySummary.totalDebit) >= 0 ? '#27ae60' : '#e74c3c'
                         }}>
                           {formatCurrency(monthlySummary.totalIncome - monthlySummary.totalDebit)}
@@ -792,7 +792,7 @@ const MonthlyIncomeExpenseManager = () => {
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="report-summary-grid">
                   <div className="report-summary-item">
                     <span className="report-summary-label">Total Income</span>
@@ -818,14 +818,14 @@ const MonthlyIncomeExpenseManager = () => {
           </Col>
         </Row>
       )}
-      
+
       {/* Action Buttons */}
       <Row className="mb-3 mb-md-4">
         <Col xs={12}>
           <div className="action-buttons-container">
             {activeView === 'transactions' ? (
               <>
-                <Button 
+                <Button
                   onClick={() => handleShowModal('add')}
                   className="action-btn action-btn-primary"
                 >
@@ -833,7 +833,7 @@ const MonthlyIncomeExpenseManager = () => {
                   <span className="d-none d-sm-inline">Add Transaction</span>
                   <span className="d-inline d-sm-none">Add</span>
                 </Button>
-                <Button 
+                <Button
                   variant="info"
                   onClick={() => {
                     getdata();
@@ -849,7 +849,7 @@ const MonthlyIncomeExpenseManager = () => {
               </>
             ) : (
               <>
-                <Button 
+                <Button
                   onClick={() => setShowReportModal(true)}
                   variant="primary"
                   className="action-btn action-btn-primary"
@@ -858,7 +858,7 @@ const MonthlyIncomeExpenseManager = () => {
                   <span className="d-none d-sm-inline">Filter Report</span>
                   <span className="d-inline d-sm-none">Filter</span>
                 </Button>
-                <Button 
+                <Button
                   variant="outline-secondary"
                   onClick={resetReportFilters}
                   className="action-btn action-btn-secondary"
@@ -872,7 +872,7 @@ const MonthlyIncomeExpenseManager = () => {
           </div>
         </Col>
       </Row>
-      
+
       {/* Main Card */}
       <Card className="main-content-card">
         {/* Filter Controls */}
@@ -881,11 +881,11 @@ const MonthlyIncomeExpenseManager = () => {
             <div className="filter-controls-wrapper">
               <div className="filter-controls-left">
                 <h5 className="filter-controls-title">
-                  {viewMode === 'current' ? 'Current Month' : 
-                   viewMode === 'select' ? formatMonthDisplay(selectedMonth) : 
+                  {viewMode === 'current' ? 'Current Month' :
+                   viewMode === 'select' ? formatMonthDisplay(selectedMonth) :
                    'All Transactions'}
                 </h5>
-                
+
                 {filteredDatas.length > 0 && (
                   <div className="filter-controls-badges">
                     <span className="badge bg-success filter-badge">
@@ -903,7 +903,7 @@ const MonthlyIncomeExpenseManager = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="filter-controls-right">
                 <DropdownButton
                   variant="outline-primary"
@@ -922,7 +922,7 @@ const MonthlyIncomeExpenseManager = () => {
                     <i className="bi bi-calendar-range me-2"></i>All Months
                   </Dropdown.Item>
                 </DropdownButton>
-                
+
                 {viewMode === 'select' && (
                   <DropdownButton
                     variant="outline-secondary"
@@ -932,8 +932,8 @@ const MonthlyIncomeExpenseManager = () => {
                     className="filter-dropdown"
                   >
                     {availableMonths.map((month) => (
-                      <Dropdown.Item 
-                        key={month.value} 
+                      <Dropdown.Item
+                        key={month.value}
                         eventKey={month.value}
                         active={selectedMonth === month.value}
                       >
@@ -961,7 +961,7 @@ const MonthlyIncomeExpenseManager = () => {
               {activeView === 'transactions' && viewMode !== 'all' && filteredDatas.length > 0 && (
                 <div className="summary-info-bar">
                   <span className="summary-info-text">
-                    Showing {filteredDatas.length} transaction{filteredDatas.length !== 1 ? 's' : ''} 
+                    Showing {filteredDatas.length} transaction{filteredDatas.length !== 1 ? 's' : ''}
                     <span className="d-none d-sm-inline"> for {viewMode === 'current' ? 'this month' : formatMonthDisplay(selectedMonth)}</span>
                   </span>
                   <Button
@@ -1001,8 +1001,8 @@ const MonthlyIncomeExpenseManager = () => {
                           return true;
                         })
                         .map((item, index) => (
-                          <tr 
-                            key={item.id || index} 
+                          <tr
+                            key={item.id || index}
                             className="transaction-row"
                             onClick={() => activeView === 'transactions' && handleShowModal('edit', item.id)}
                           >
@@ -1013,14 +1013,14 @@ const MonthlyIncomeExpenseManager = () => {
                                 {item.isMonthlyIncome ? 'Income' : 'Expense'}
                               </span>
                             </td>
-                            <td style={{ 
-                              color: item.isMonthlyIncome ? "#27ae60" : "#e74c3c", 
-                              fontWeight: "bold" 
+                            <td style={{
+                              color: item.isMonthlyIncome ? "#27ae60" : "#e74c3c",
+                              fontWeight: "bold"
                             }}>
                               {formatCurrency(item.isMonthlyIncome ? item.incomeAmount : item.debitAmount)}
                             </td>
                             <td>
-                              <span className="category-badge" style={{ 
+                              <span className="category-badge" style={{
                                 backgroundColor: getCategoryColor(item.category)
                               }}>
                                 {item.category}
@@ -1029,9 +1029,9 @@ const MonthlyIncomeExpenseManager = () => {
                             <td>{item.description || 'N/A'}</td>
                             {activeView === 'transactions' && (
                               <>
-                                <td style={{ 
-                                  color: item.cumulativeBalance >= 0 ? "#27ae60" : "#e74c3c", 
-                                  fontWeight: "bold" 
+                                <td style={{
+                                  color: item.cumulativeBalance >= 0 ? "#27ae60" : "#e74c3c",
+                                  fontWeight: "bold"
                                 }}>
                                   {formatCurrency(item.cumulativeBalance)}
                                 </td>
@@ -1068,7 +1068,7 @@ const MonthlyIncomeExpenseManager = () => {
                           <i className="bi bi-calendar-x empty-state-icon"></i>
                           <p className="mt-3">No transactions found</p>
                           {activeView === 'transactions' && (
-                            <Button 
+                            <Button
                               onClick={() => handleShowModal('add')}
                               variant="primary"
                               className="mt-2"
@@ -1100,7 +1100,7 @@ const MonthlyIncomeExpenseManager = () => {
                     <i className="bi bi-calendar-x empty-state-icon"></i>
                     <p className="mt-3">No transactions found</p>
                     {activeView === 'transactions' && (
-                      <Button 
+                      <Button
                         onClick={() => handleShowModal('add')}
                         variant="primary"
                         className="mt-2"
@@ -1135,7 +1135,7 @@ const MonthlyIncomeExpenseManager = () => {
                       setSelectedMonth(availableMonths[currentMonthIndex + 1].value);
                     }
                   }}
-                  disabled={!availableMonths.find(m => m.value === selectedMonth) || 
+                  disabled={!availableMonths.find(m => m.value === selectedMonth) ||
                     availableMonths.findIndex(m => m.value === selectedMonth) >= availableMonths.length - 1}
                   className="footer-nav-btn"
                 >
@@ -1150,7 +1150,7 @@ const MonthlyIncomeExpenseManager = () => {
                       setSelectedMonth(availableMonths[currentMonthIndex - 1].value);
                     }
                   }}
-                  disabled={!availableMonths.find(m => m.value === selectedMonth) || 
+                  disabled={!availableMonths.find(m => m.value === selectedMonth) ||
                     availableMonths.findIndex(m => m.value === selectedMonth) <= 0}
                   className="footer-nav-btn"
                 >
@@ -1161,7 +1161,7 @@ const MonthlyIncomeExpenseManager = () => {
           </Card.Footer>
         )}
       </Card>
-      
+
       {/* Footer Info */}
       <div className="finance-footer">
         <p className="finance-footer-text">
@@ -1223,7 +1223,7 @@ const MonthlyIncomeExpenseManager = () => {
                 </Form.Group>
               </Col>
             </Row>
-            
+
             <Form.Group className="mb-3">
               <Form.Check
                 type="checkbox"
@@ -1233,7 +1233,7 @@ const MonthlyIncomeExpenseManager = () => {
                 onChange={handleInputChange}
               />
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Description *</Form.Label>
               <Form.Control
@@ -1250,7 +1250,7 @@ const MonthlyIncomeExpenseManager = () => {
                 {formErrors.description}
               </Form.Control.Feedback>
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>
                 {formData.isMonthlyIncome ? 'Income Amount *' : 'Expense Amount *'}
@@ -1306,7 +1306,7 @@ const MonthlyIncomeExpenseManager = () => {
                 {incomeFormErrors.transactionDate}
               </Form.Control.Feedback>
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Income Amount *</Form.Label>
               <Form.Control
@@ -1324,7 +1324,7 @@ const MonthlyIncomeExpenseManager = () => {
                 {incomeFormErrors.incomeAmount}
               </Form.Control.Feedback>
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Description</Form.Label>
               <Form.Control
