@@ -5,7 +5,7 @@ import EmployeeCRUD from './Crud';
 import TransactionCRUD from './Trans';
 import Login from './components/Login';
 import Register from './components/Register';
-import UserManagement from './components/UserManagement'; // NEW: admin-only screen
+import UserManagement from './components/UserManagement'; // Admin-only screen
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Container, Navbar, Nav, Row, Col, Button } from 'react-bootstrap';
 import logo from "./assets/logo.jpeg";
@@ -18,7 +18,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
 
-  const isAdmin = user?.role === 'Admin'; // NEW
+  const isAdmin = user?.role === 'Admin';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -55,7 +55,6 @@ function App() {
       case 'transactions':
         return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />;
       case 'users':
-        // Extra guard — even if someone forces this state, non-admins can't see it
         return isAdmin ? <UserManagement /> : <Navigate to="/" replace />;
       case 'employees':
       default:
@@ -66,7 +65,6 @@ function App() {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => { if (isMobile) setIsSidebarOpen(false); };
 
-  // NEW: "User Management" only shows up for Admins
   const menuItems = [
     {
       key: 'employees',
@@ -133,38 +131,34 @@ function App() {
 
         <Navbar expand="lg" className="custom-navbar" sticky="top">
           <Container fluid>
+            {/* LEFT: menu button + logo/brand only. Shrinks on small screens. */}
             <div className="navbar-left">
               <Button variant="link" className="menu-toggle-btn" onClick={toggleSidebar} aria-label="Toggle menu">
                 <i className={`bi ${isSidebarOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
               </Button>
-              <Navbar.Brand href="#" className="brand-logo">
-           
-<div className="logo-wrapper">
-  <div className="logo-icon">
-    <img src={logo} alt="SHANMAM IT SOLUTIONS" />
-  </div>
 
-  <span className="brand-text">Home Account Management</span>
-</div>
+              <Navbar.Brand className="brand-logo">
+                <div className="logo-wrapper">
+                  <div className="logo-icon">
+                    <img src={logo} alt="SHANMAM IT SOLUTIONS" />
+                  </div>
+                  <span className="brand-text">Home Account Management</span>
+                </div>
+              </Navbar.Brand>
+            </div>
 
-                <div className="user-badge">
-                <div className="user-badge-avatar"><i className="bi bi-person-circle"></i></div>
+            {/* RIGHT: user badge + logout. Fixed width, never shrinks. */}
+            <div className="navbar-right">
+              <div className="user-badge">
+                <div className="user-badge-avatar">
+                  <i className="bi bi-person-circle"></i>
+                </div>
                 <div className="user-badge-info d-none d-md-block">
                   <span className="user-badge-name">{user.username}</span>
                   <span className="user-badge-email">{user.email}</span>
                 </div>
               </div>
-              </Navbar.Brand>
-            </div>
 
-            <div className="navbar-right">
-              {/* <div className="user-badge">
-                <div className="user-badge-avatar"><i className="bi bi-person-circle"></i></div>
-                <div className="user-badge-info d-none d-md-block">
-                  <span className="user-badge-name">{user.username}</span>
-                  <span className="user-badge-email">{user.email}</span>
-                </div>
-              </div> */}
               <Button variant="outline-light" size="sm" className="logout-btn" onClick={handleLogout}>
                 <i className="bi bi-box-arrow-right"></i>
                 <span className="d-none d-sm-inline"> Logout</span>
@@ -178,10 +172,7 @@ function App() {
             <Col xs={12} md={3} lg={2} className={`sidebar-col ${isSidebarOpen ? 'open' : 'closed'}`}>
               <div className="sidebar-wrapper">
                 <div className="sidebar-header">
-                  <div className="sidebar-title">
-                    {/* <div className="title-icon-wrapper"><i className="bi bi-grid-3x3-gap-fill"></i></div>
-                    <span>Navigation</span> */}
-                   <div className="user-profile-card">
+                  <div className="user-profile-card">
                     <div className="user-profile-avatar">
                       <img
                         src={`https://ui-avatars.com/api/?name=${user.username}&background=667eea&color=fff&bold=true`}
@@ -196,7 +187,6 @@ function App() {
                       <div className="user-profile-name">{user.username}</div>
                       <div className="user-profile-role">{isAdmin ? 'Administrator' : 'User'}</div>
                     </div>
-                  </div>
                   </div>
                 </div>
 
@@ -221,24 +211,7 @@ function App() {
                   ))}
                 </Nav>
 
-                <div className="sidebar-footer">
-                  {/* <div className="user-profile-card">
-                    <div className="user-profile-avatar">
-                      <img
-                        src={`https://ui-avatars.com/api/?name=${user.username}&background=667eea&color=fff&bold=true`}
-                        alt={user.username}
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.parentElement.innerHTML = '<i class="bi bi-person-circle"></i>';
-                        }}
-                      />
-                    </div>
-                    <div className="user-profile-info">
-                      <div className="user-profile-name">{user.username}</div>
-                      <div className="user-profile-role">{isAdmin ? 'Administrator' : 'User'}</div>
-                    </div>
-                  </div> */}
-                </div>
+                <div className="sidebar-footer"></div>
               </div>
             </Col>
 
