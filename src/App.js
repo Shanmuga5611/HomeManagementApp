@@ -51,21 +51,29 @@ function App() {
   };
 
   const renderPage = () => {
-    switch (currentPage) {
-      case 'transactions':
-        return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />;
-      case 'users':
-        return isAdmin ? <UserManagement /> : <Navigate to="/" replace />;
-      case 'employees':
-      default:
-        return <EmployeeCRUD onNavigateToTransactions={() => setCurrentPage('transactions')} />;
-    }
-  };
+  switch (currentPage) {
+    case 'transactions':
+      return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />;
+    case 'users':
+      return isAdmin ? <UserManagement /> : <Navigate to="/" replace />;
+    case 'employees':
+      return isAdmin ? <EmployeeCRUD onNavigateToTransactions={() => setCurrentPage('transactions')} /> : <Navigate to="/" replace />; // CHANGED: guard added
+    default:
+      return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />; // CHANGED: default -> transactions (safe for both roles)
+  }
+};
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => { if (isMobile) setIsSidebarOpen(false); };
 
   const menuItems = [
+  {
+    key: 'transactions',
+    label: 'Transaction Management',
+    icon: 'bi-cash-stack',
+    description: 'Track your own transactions'
+  },
+  ...(isAdmin ? [
     {
       key: 'employees',
       label: 'Account Management',
@@ -73,18 +81,13 @@ function App() {
       description: 'Manage and organize accounts'
     },
     {
-      key: 'transactions',
-      label: 'Transaction Management',
-      icon: 'bi-cash-stack',
-      description: 'Track your own transactions'
-    },
-    ...(isAdmin ? [{
       key: 'users',
       label: 'User Management',
       icon: 'bi-person-badge',
       description: 'Manage all usernames & passwords'
-    }] : [])
-  ];
+    }
+  ] : [])
+];
 
   const pageTitles = {
     employees: 'Account Management',
