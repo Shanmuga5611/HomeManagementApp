@@ -888,7 +888,6 @@ body {
     position: relative !important;
     top: 0 !important;
     height: 100% !important;
-    width: var(--sidebar-width) !important;
     box-shadow: none !important;
   }
 
@@ -984,4 +983,16 @@ body {
   .sidebar-footer {
     border-top-color: rgba(255, 255, 255, 0.05);
   }
+}
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-icon img {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+  border-radius: 8px;
 }

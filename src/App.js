@@ -8,6 +8,7 @@ import Register from './components/Register';
 import UserManagement from './components/UserManagement'; // NEW: admin-only screen
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Container, Navbar, Nav, Row, Col, Button } from 'react-bootstrap';
+import logo from "./assets/logo.jpeg";
 import './App.css';
 
 function App() {
@@ -137,21 +138,33 @@ function App() {
                 <i className={`bi ${isSidebarOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
               </Button>
               <Navbar.Brand href="#" className="brand-logo">
-                <div className="logo-wrapper">
-                  <div className="logo-icon"><i className="bi bi-house-heart"></i></div>
-                  <span className="brand-text">Home Management</span>
-                </div>
-              </Navbar.Brand>
-            </div>
+           
+<div className="logo-wrapper">
+  <div className="logo-icon">
+    <img src={logo} alt="SHANMAM IT SOLUTIONS" />
+  </div>
 
-            <div className="navbar-right">
-              <div className="user-badge">
+  <span className="brand-text">Home Account Management</span>
+</div>
+
+                <div className="user-badge">
                 <div className="user-badge-avatar"><i className="bi bi-person-circle"></i></div>
                 <div className="user-badge-info d-none d-md-block">
                   <span className="user-badge-name">{user.username}</span>
                   <span className="user-badge-email">{user.email}</span>
                 </div>
               </div>
+              </Navbar.Brand>
+            </div>
+
+            <div className="navbar-right">
+              {/* <div className="user-badge">
+                <div className="user-badge-avatar"><i className="bi bi-person-circle"></i></div>
+                <div className="user-badge-info d-none d-md-block">
+                  <span className="user-badge-name">{user.username}</span>
+                  <span className="user-badge-email">{user.email}</span>
+                </div>
+              </div> */}
               <Button variant="outline-light" size="sm" className="logout-btn" onClick={handleLogout}>
                 <i className="bi bi-box-arrow-right"></i>
                 <span className="d-none d-sm-inline"> Logout</span>
@@ -166,8 +179,24 @@ function App() {
               <div className="sidebar-wrapper">
                 <div className="sidebar-header">
                   <div className="sidebar-title">
-                    <div className="title-icon-wrapper"><i className="bi bi-grid-3x3-gap-fill"></i></div>
-                    <span>Navigation</span>
+                    {/* <div className="title-icon-wrapper"><i className="bi bi-grid-3x3-gap-fill"></i></div>
+                    <span>Navigation</span> */}
+                   <div className="user-profile-card">
+                    <div className="user-profile-avatar">
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${user.username}&background=667eea&color=fff&bold=true`}
+                        alt={user.username}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<i class="bi bi-person-circle"></i>';
+                        }}
+                      />
+                    </div>
+                    <div className="user-profile-info">
+                      <div className="user-profile-name">{user.username}</div>
+                      <div className="user-profile-role">{isAdmin ? 'Administrator' : 'User'}</div>
+                    </div>
+                  </div>
                   </div>
                 </div>
 
@@ -193,7 +222,7 @@ function App() {
                 </Nav>
 
                 <div className="sidebar-footer">
-                  <div className="user-profile-card">
+                  {/* <div className="user-profile-card">
                     <div className="user-profile-avatar">
                       <img
                         src={`https://ui-avatars.com/api/?name=${user.username}&background=667eea&color=fff&bold=true`}
@@ -208,7 +237,7 @@ function App() {
                       <div className="user-profile-name">{user.username}</div>
                       <div className="user-profile-role">{isAdmin ? 'Administrator' : 'User'}</div>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </Col>
