@@ -65,24 +65,17 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  flex-wrap: nowrap; /* NEW: keep left/right on one line, let inner content shrink instead */
+  flex-wrap: nowrap;
 }
 
-/* =========================================================
-   NAVBAR LEFT (menu button + logo/brand). Shrinks first.
-========================================================= */
-
+/* LEFT: menu button + logo/brand. Shrinks first. */
 .navbar-left {
   display: flex;
   align-items: center;
-  min-width: 0;        /* required so children can actually shrink/ellipsis */
-  flex: 1 1 auto;       /* CHANGED: was "flex: 1" — explicit shrink allowed */
+  min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
 }
-
-/* =========================================================
-   MENU BUTTON
-========================================================= */
 
 .menu-toggle-btn {
   width: 42px;
@@ -98,7 +91,7 @@ body {
   font-size: 22px;
   border-radius: 10px;
   transition: all 0.2s ease;
-  flex-shrink: 0; /* NEW: menu icon never shrinks/squishes */
+  flex-shrink: 0;
 }
 
 .menu-toggle-btn:hover {
@@ -106,10 +99,7 @@ body {
   color: #2563eb !important;
 }
 
-/* =========================================================
-   BRAND (logo + text)
-========================================================= */
-
+/* Brand (logo + text) */
 .brand-logo {
   margin: 0 !important;
   padding: 0 !important;
@@ -151,12 +141,16 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0; /* NEW: lets ellipsis actually kick in inside a flex row */
+  min-width: 0;
 }
 
-/* =========================================================
-   USER BADGE (lives in navbar-right now, not inside brand)
-========================================================= */
+/* RIGHT: user badge + logout. Never shrinks. */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 10px;
+}
 
 .user-badge {
   display: flex;
@@ -167,7 +161,7 @@ body {
   background: #f8fafc;
   border: 1px solid #e5e7eb;
   max-width: 230px;
-  flex-shrink: 0; /* NEW: badge keeps its size, never gets crushed by the logo */
+  flex-shrink: 0;
 }
 
 .user-badge-avatar {
@@ -206,17 +200,6 @@ body {
   text-overflow: ellipsis;
 }
 
-/* =========================================================
-   NAVBAR RIGHT (badge + logout). Fixed, never shrinks.
-========================================================= */
-
-.navbar-right {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  gap: 10px; /* NEW: consistent spacing, no margin-left hacks needed */
-}
-
 .logout-btn {
   min-height: 38px;
   padding: 6px 13px;
@@ -248,13 +231,19 @@ body {
 }
 
 /* =========================================================
-   SIDEBAR
+   SIDEBAR (single definition)
 ========================================================= */
 
 .sidebar-col {
   height: 100%;
   padding: 0 !important;
-  transition: width 0.3s ease, transform 0.3s ease;
+  overflow: hidden;
+  transition:
+    width 0.3s ease,
+    max-width 0.3s ease,
+    flex-basis 0.3s ease,
+    transform 0.3s ease,
+    opacity 0.3s ease;
 }
 
 .sidebar-wrapper {
@@ -266,10 +255,42 @@ body {
   overflow-y: auto;
 }
 
-/* =========================================================
-   SIDEBAR HEADER
-========================================================= */
+/* Desktop: sidebar collapses to 0 width, content expands */
+@media (min-width: 992px) {
+  .sidebar-col.open {
+    width: 280px !important;
+    max-width: 280px !important;
+    flex: 0 0 280px !important;
+    opacity: 1;
+  }
 
+  .sidebar-col.closed {
+    width: 0 !important;
+    max-width: 0 !important;
+    flex: 0 0 0 !important;
+    opacity: 0;
+  }
+
+  .sidebar-col.closed .sidebar-wrapper {
+    visibility: hidden;
+    pointer-events: none;
+    border-right: none;
+  }
+
+  .sidebar-col.open .sidebar-wrapper {
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .content-col {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    max-width: 100% !important;
+    transition: all 0.3s ease;
+  }
+}
+
+/* Sidebar header / profile card */
 .sidebar-header {
   padding: 18px 15px 10px;
 }
@@ -317,10 +338,7 @@ body {
   color: #6b7280;
 }
 
-/* =========================================================
-   SIDEBAR NAVIGATION
-========================================================= */
-
+/* Sidebar navigation */
 .sidebar-nav {
   padding: 8px 10px;
   gap: 5px;
@@ -410,10 +428,6 @@ body {
   background: #2563eb;
 }
 
-/* =========================================================
-   SIDEBAR FOOTER
-========================================================= */
-
 .sidebar-footer {
   margin-top: auto;
   min-height: 20px;
@@ -433,10 +447,6 @@ body {
   min-height: 100%;
   padding: 25px;
 }
-
-/* =========================================================
-   PAGE HEADER
-========================================================= */
 
 .page-header {
   display: flex;
@@ -478,10 +488,6 @@ body {
   color: #6b7280;
 }
 
-/* =========================================================
-   CONTENT CARD
-========================================================= */
-
 .page-content {
   width: 100%;
 }
@@ -496,10 +502,7 @@ body {
   overflow-x: auto;
 }
 
-/* =========================================================
-   SIDEBAR OVERLAY
-========================================================= */
-
+/* Sidebar overlay (mobile only) */
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -558,7 +561,7 @@ body {
 }
 
 /* =========================================================
-   MOBILE
+   MOBILE (sidebar becomes a slide-in drawer)
 ========================================================= */
 
 @media (max-width: 991.98px) {
@@ -576,7 +579,6 @@ body {
     overflow: visible;
   }
 
-  /* Mobile sidebar */
   .sidebar-col {
     position: fixed;
     top: 64px;
@@ -586,7 +588,6 @@ body {
     height: calc(100vh - 64px);
     z-index: 1040;
     transform: translateX(-100%);
-    transition: transform 0.3s ease;
     display: block !important;
   }
 
@@ -627,14 +628,14 @@ body {
 
   .brand-text {
     font-size: 16px;
-    max-width: 150px; /* CHANGED: was 210px — leaves room for badge+logout on the right */
+    max-width: 150px;
   }
 
   .user-badge {
     padding: 4px 7px;
     border: none;
     background: transparent;
-    max-width: 130px; /* NEW: keeps badge compact on mobile */
+    max-width: 130px;
   }
 
   .user-badge-avatar {
@@ -694,7 +695,7 @@ body {
   }
 
   .logo-icon {
-    width: 60px;   /* CHANGED: smaller so brand-text + badge + logout all fit one row */
+    width: 60px;
     height: 34px;
   }
 
@@ -704,16 +705,16 @@ body {
 
   .brand-text {
     font-size: 12px;
-    max-width: 80px; /* CHANGED: shrink further, badge/logout stay visible */
+    max-width: 80px;
   }
 
   .user-badge {
     padding: 0;
-    max-width: 40px; /* effectively just the avatar; name/email already hidden below md */
+    max-width: 40px;
   }
 
   .user-badge-info {
-    display: none; /* NEW: name/email fully hidden on small phones, avatar-only badge */
+    display: none;
   }
 
   .user-badge-avatar {
@@ -764,7 +765,6 @@ body {
     border-radius: 10px;
   }
 
-  /* Sidebar */
   .sidebar-col {
     top: 60px;
     width: 280px !important;
@@ -802,7 +802,7 @@ body {
   }
 
   .user-badge {
-    display: none; /* NEW: on the smallest phones, drop badge entirely — logout still visible */
+    display: none;
   }
 
   .page-title {

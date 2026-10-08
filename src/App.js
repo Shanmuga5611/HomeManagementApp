@@ -1,8 +1,9 @@
 // App.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import EmployeeCRUD from './Crud';
 import TransactionCRUD from './Trans';
+import Dashboard from './Dashboard';
 import Login from './components/Login';
 import Register from './components/Register';
 import UserManagement from './components/UserManagement'; // Admin-only screen
@@ -11,12 +12,15 @@ import { Container, Navbar, Nav, Row, Col, Button } from 'react-bootstrap';
 import logo from "./assets/logo.jpeg";
 import './App.css';
 
+const DESKTOP_BREAKPOINT = 992;
+
 function App() {
-  const [currentPage, setCurrentPage] = useState('employees');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState('dashboard'); // first screen for Admin + User
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= DESKTOP_BREAKPOINT);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < DESKTOP_BREAKPOINT);
+  const wasMobile = useRef(window.innerWidth < DESKTOP_BREAKPOINT);
 
   const isAdmin = user?.role === 'Admin';
 
@@ -29,75 +33,100 @@ function App() {
     }
     setLoading(false);
 
+    // Only reset the sidebar when the screen CROSSES the breakpoint,
+    // so a manual desktop toggle is not undone on every resize event.
     const handleResize = () => {
-      const mobile = window.innerWidth < 992;
+      const mobile = window.innerWidth < DESKTOP_BREAKPOINT;
       setIsMobile(mobile);
-      setIsSidebarOpen(!mobile);
+      if (mobile !== wasMobile.current) {
+        setIsSidebarOpen(!mobile); // mobile -> closed, desktop -> open
+        wasMobile.current = mobile;
+      }
     };
 
     window.addEventListener('resize', handleResize);
-    handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const handleLogin = (userData) => {
     setUser(userData);
+    setCurrentPage('dashboard'); // always land on Dashboard after login
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
+    setCurrentPage('dashboard');
   };
 
   const renderPage = () => {
-  switch (currentPage) {
-    case 'transactions':
-      return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />;
-    case 'users':
-      return isAdmin ? <UserManagement /> : <Navigate to="/" replace />;
-    case 'employees':
-      return isAdmin ? <EmployeeCRUD onNavigateToTransactions={() => setCurrentPage('transactions')} /> : <Navigate to="/" replace />; // CHANGED: guard added
-    default:
-      return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />; // CHANGED: default -> transactions (safe for both roles)
-  }
-};
+    switch (currentPage) {
+      case 'transactions':
+        return <TransactionCRUD onNavigateToAccounts={() => setCurrentPage('employees')} />;
+      case 'users':
+        return isAdmin ? <UserManagement /> : <Navigate to="/" replace />;
+      case 'employees':
+        return isAdmin
+          ? <EmployeeCRUD onNavigateToTransactions={() => setCurrentPage('transactions')} />
+          : <Navigate to="/" replace />;
+      case 'dashboard':
+      default:
+        return <Dashboard />;
+    }
+  };
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const closeSidebar = () => { if (isMobile) setIsSidebarOpen(false); };
 
   const menuItems = [
-  {
-    key: 'transactions',
-    label: 'Transaction Management',
-    icon: 'bi-cash-stack',
-    description: 'Track your own transactions'
-  },
-  ...(isAdmin ? [
     {
-      key: 'employees',
-      label: 'Account Management',
-      icon: 'bi-people',
-      description: 'Manage and organize accounts'
+      key: 'dashboard',
+      label: 'Dashboard',
+      icon: 'bi-speedometer2',
+      description: 'Income & expense overview'
     },
     {
-      key: 'users',
-      label: 'User Management',
-      icon: 'bi-person-badge',
-      description: 'Manage all usernames & passwords'
-    }
-  ] : [])
-];
+      key: 'transactions',
+      label: 'Transaction Management',
+      icon: 'bi-cash-stack',
+      description: 'Track your own transactions'
+    },
+    ...(isAdmin ? [
+      {
+        key: 'employees',
+        label: 'Account Management',
+        icon: 'bi-people',
+        description: 'Manage and organize accounts'
+      },
+      {
+        key: 'users',
+        label: 'User Management',
+        icon: 'bi-person-badge',
+        description: 'Manage all usernames & passwords'
+      }
+    ] : [])
+  ];
 
   const pageTitles = {
+    dashboard: 'Dashboard',
     employees: 'Account Management',
     transactions: 'Transaction Management',
     users: 'User Management'
   };
+
   const pageSubtitles = {
+    dashboard: 'Month wise income and expense flow',
     employees: 'Manage and organize all user accounts',
     transactions: 'Track and manage your financial transactions',
     users: 'Admin only: manage every user\'s username, password & role'
+  };
+
+  const pageIcons = {
+    dashboard: 'bi-speedometer2',
+    employees: 'bi-people',
+    transactions: 'bi-cash-stack',
+    users: 'bi-person-badge'
   };
 
   if (loading) {
@@ -134,7 +163,7 @@ function App() {
 
         <Navbar expand="lg" className="custom-navbar" sticky="top">
           <Container fluid>
-            {/* LEFT: menu button + logo/brand only. Shrinks on small screens. */}
+            {/* LEFT: menu button + logo/brand. Shrinks on small screens. */}
             <div className="navbar-left">
               <Button variant="link" className="menu-toggle-btn" onClick={toggleSidebar} aria-label="Toggle menu">
                 <i className={`bi ${isSidebarOpen ? 'bi-x-lg' : 'bi-list'}`}></i>
@@ -223,7 +252,7 @@ function App() {
                 <div className="page-header">
                   <div className="page-header-left">
                     <div className="page-icon-wrapper">
-                      <i className={`bi ${currentPage === 'employees' ? 'bi-people' : currentPage === 'users' ? 'bi-person-badge' : 'bi-cash-stack'}`}></i>
+                      <i className={`bi ${pageIcons[currentPage] || 'bi-speedometer2'}`}></i>
                     </div>
                     <div>
                       <h2 className="page-title">{pageTitles[currentPage]}</h2>
