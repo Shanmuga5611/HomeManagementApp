@@ -2,6 +2,7 @@
   "name": "webapp_react",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://shanmuga5611.github.io/HomeManagementApp",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.8.0",
