@@ -144,7 +144,7 @@ function App() {
 
   if (!user) {
     return (
-      <Router>
+      <Router basename={process.env.NODE_ENV === 'production' ? '/HomeManagementApp' : undefined}>
         <Routes>
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/register" element={<Register onLogin={handleLogin} />} />
@@ -155,7 +155,7 @@ function App() {
   }
 
   return (
-    <Router>
+    <Router basename={process.env.NODE_ENV === 'production' ? '/HomeManagementApp' : undefined}>
       <div className="App">
         {isMobile && isSidebarOpen && (
           <div className="sidebar-overlay" onClick={closeSidebar}></div>
