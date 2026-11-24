@@ -54,7 +54,8 @@ const MonthlyIncomeExpenseManager = () => {
   const [expandedRows, setExpandedRows] = useState({});
   const [, setIsMobile] = useState(window.innerWidth < 768);
 
-  const API_BASE_URL = 'https://homemanageapp.runasp.net/api/Transaction';
+  //const API_BASE_URL = 'https://homemanageapp.runasp.net/api/Transaction';
+   const API_BASE_URL = 'http://incomeandexpensesapp.tryasp.net/api';
  // const API_BASE_URL = 'https://localhost:7215/api/Transaction';
   const categories = ["food", "transport", "utilities", "entertainment", "shopping", "healthcare", "education", "other"];
 

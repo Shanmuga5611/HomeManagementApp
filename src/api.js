@@ -1,7 +1,8 @@
 // api.js — central place for the API base URL + auth header.
 // Use this instead of plain fetch() everywhere so the token is never forgotten.
 
-export const API_BASE_URL = 'https://homemanageapp.runasp.net/api';
+//export const API_BASE_URL = 'https://homemanageapp.runasp.net/api';
+export const API_BASE_URL = 'http://incomeandexpensesapp.tryasp.net/api';
 //export const API_BASE_URL = 'https://localhost:7215/api';
 
 export const authHeaders = () => {

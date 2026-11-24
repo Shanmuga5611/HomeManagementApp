@@ -42,7 +42,8 @@ const Register = ({ onLogin }) => {
   //const API_BASE_URL = 'https://localhost:44357/api;
 
   //Live API URL
-   const API_BASE_URL = 'https://homemanageapp.runasp.net/api';
+   //const API_BASE_URL = 'https://homemanageapp.runasp.net/api';
+    const API_BASE_URL = 'http://incomeandexpensesapp.tryasp.net/api';
     try {
 
       const response = await fetch(`${API_BASE_URL}/LoginRegister/register`, {
